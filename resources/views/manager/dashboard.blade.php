@@ -5,12 +5,12 @@
         <div class="row justify-content-center">
             <div class="col-md-12">
                 <div class="card">
-                    <div class="card-header">Admin Dashboard</div>
+                    <div class="card-header"><h4>Manager Dashboard</h4></div>
 
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-3">
-                                <a href="{{ route('admin.users.index') }}" style="text-decoration: none;">
+                                <a href="{{ route('manager.users.index') }}" style="text-decoration: none;">
                                     <div class="card text-white bg-primary mb-3">
                                         <div class="card-body">
                                             <h5 class="card-title">Click Manage Users</h5>

@@ -7,7 +7,7 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Edit User: {{ $user->name }}</h4>
-                        <a href="{{ route('admin.users.index') }}" class="btn btn-secondary btn-sm">Back to Users</a>
+                        <a href="{{ route('manager.users.index') }}" class="btn btn-secondary btn-sm">Back to Users</a>
                     </div>
 
                     <div class="card-body">
@@ -21,7 +21,7 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('admin.users.update', $user->id) }}">
+                        <form method="POST" action="{{ route('manager.users.update', $user->id) }}">
                             @csrf
                             @method('PUT')
 
@@ -102,7 +102,7 @@
                                     <button type="submit" class="btn btn-primary">
                                         <i class="fas fa-save"></i> Update User
                                     </button>
-                                    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Cancel</a>
+                                    <a href="{{ route('manager.users.index') }}" class="btn btn-secondary">Cancel</a>
                                 </div>
                             </div>
                         </form>

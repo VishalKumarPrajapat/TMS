@@ -3,6 +3,7 @@
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ManagerController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
@@ -46,7 +47,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 // Manager routes
 Route::middleware(['auth', 'manager'])->prefix('manager')->name('manager.')->group(function () {
     // Manager dashboard
-    Route::get('/dashboard', [AdminController::class, 'managerDashboard'])->name('dashboard');
+    Route::get('/dashboard', [ManagerController::class, 'dashboard'])->name('dashboard');
+    Route::get('/users', [ManagerController::class, 'users'])->name('users.index');
+    Route::get('/users/create', [ManagerController::class, 'createUser'])->name('users.create');
+    Route::post('/users', [ManagerController::class, 'storeUser'])->name('users.store');
+    Route::get('/users/{user}/edit', [ManagerController::class, 'editUser'])->name('users.edit');
+    Route::put('/users/{user}', [ManagerController::class, 'updateUser'])->name('users.update');
+    Route::delete('/users/{user}', [ManagerController::class, 'deleteUser'])->name('users.delete');
+
     Route::get('/tasks', [AdminController::class, 'teamTasks'])->name('tasks.index');
     Route::get('/tasks/{task}', [AdminController::class, 'showTeamTask'])->name('tasks.show');
 

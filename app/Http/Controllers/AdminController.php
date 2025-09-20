@@ -14,34 +14,104 @@ use Illuminate\Support\Facades\Validator;
 
 class AdminController extends Controller
 {
+    protected $currentUser;
+
     public function __construct()
     {
         $this->middleware('admin');
+        $this->currentUser = auth()->user();
     }
 
-    // Dashboard
+    // Dashboard 
+    // public function dashboard()
+    // {
+    //     $total_users =  User::count();
+    //     $total_task = Task::count();
+    //     $complete_Tasks  =  Task::where('status', 'completed')->count();
+    //     $pending_tasks = Task::where('status', 'pending')->count();
+    //     $recent_tasks = Task::with('user')->latest()->take(5)->get();
+
+    //     return view('admin.dashboard', [
+    //         'total_users' => $total_users,
+    //         'total_task' => $total_task,
+    //         'complete_Tasks' => $complete_Tasks,
+    //         'recent_tasks' => $recent_tasks,
+    //         'pending_tasks' => $pending_tasks
+    //     ]);
+    // }
+
     public function dashboard()
     {
-        $total_users =  User::count();
-        $total_task = Task::count();
-        $complete_Tasks  =  Task::where('status', 'completed')->count();
-        $pending_tasks = Task::where('status', 'pending')->count(); 
-        $recent_tasks = Task::with('user')->latest()->take(5)->get();
+        $admin = auth()->user();
+
+        /**Get & Count All managers and users */
+        $directUsers = User::where('created_by', $admin->id)->pluck('id');
+        $managerIds = User::where('role_id', Role::MANAGER)->where('created_by', $admin->id)->pluck('id');
+        $indirectUsers = User::whereIn('created_by', $managerIds)->pluck('id');
+
+        $userIds  = $directUsers->merge($indirectUsers)->unique();
+        $total_users = User::whereIn('id', $userIds)->count();
+
+        $total_task = Task::where(function ($query) use ($userIds) {
+            $query->whereIn('user_id', $userIds)
+                ->orWhereIn('assigned_to', $userIds);
+        })->count();
+
+        $complete_Tasks = Task::where(function ($query) use ($userIds) {
+            $query->whereIn('user_id', $userIds)
+                ->orWhereIn('assigned_to', $userIds);
+        })->where('status', 'completed')->count();
+
+        $pending_tasks = Task::where(function ($query) use ($userIds) {
+            $query->whereIn('user_id', $userIds)
+                ->orWhereIn('assigned_to', $userIds);
+        })->where('status', 'pending')->count();
+
+        $recent_tasks = Task::with('user')->where(function ($query) use ($userIds) {
+            $query->whereIn('user_id', $userIds)
+                ->orWhereIn('assigned_to', $userIds);
+        })->latest()->take(5)->get();
 
         return view('admin.dashboard', [
             'total_users' => $total_users,
             'total_task' => $total_task,
             'complete_Tasks' => $complete_Tasks,
-            'recent_tasks' => $recent_tasks,
-            'pending_tasks' => $pending_tasks
+            'pending_tasks' => $pending_tasks,
+            'recent_tasks' => $recent_tasks
         ]);
     }
+
+
 
     // User Management Methods 
     public function users()
     {
-        $users = User::with('role')->latest()->paginate(10);
-        return view('admin.users.index', compact('users'));
+        // $users = User::with('role')->latest()->paginate(10);
+        // return view('admin.users.index', compact('users'));
+        $currentUser = auth()->user();
+
+        // If the current user is an Admin (role_id = 1)
+        // if ($currentUser->role_id == 1) {
+        // Admin can see all users they created, and users created by their managers
+        $users = User::where(function ($query) use ($currentUser) {
+            $query->where('created_by', $currentUser->id)
+                ->orWhereHas('createdBy', function ($query) use ($currentUser) {
+                    $query->where('created_by', $currentUser->id); // Filter users created by managers
+                });
+        })
+            ->with('role') // Include the role relation
+            ->latest()
+            ->paginate(10);
+        // } else {
+        //     // If not an Admin, return only the users created by the current user
+        //     $users = User::where('created_by', $currentUser->id)
+        //         ->with('role') // Include the role relation
+        //         ->latest()
+        //         ->paginate(10);
+        // }
+
+        // Return the view with the users data
+        return view('admin.users.index', ['users' => $users]);
     }
 
     /**
@@ -72,19 +142,22 @@ class AdminController extends Controller
         }
 
         // Prevent non-admins from creating admin users
-        $requestedRole = Role::find($request->role_id);
-        if ($requestedRole->name === 'admin' && !Auth::user()->isAdmin()) {
-            return redirect()->back()
-                ->with('error', 'You are not authorized to create admin users.')
-                ->withInput();
-        }
+        // $requestedRole = Role::find($request->role_id);
+        // if ($requestedRole->name === 'admin' && !Auth::user()->isAdmin()) {
+        //     return redirect()->back()
+        //         ->with('error', 'You are not authorized to create admin users.')
+        //         ->withInput();
+        // }
 
         try {
+            $admin = auth()->user();
+
             User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role_id' => $request->role_id,
+                'created_by' => $admin->id,
             ]);
 
             return redirect()->route('admin.users.index')
@@ -163,13 +236,7 @@ class AdminController extends Controller
         if ($user->id === Auth::id()) {
             return redirect()->route('admin.users.index')
                 ->with('error', 'You cannot delete your own account.');
-        }
-
-        // Prevent deleting the primary admin account (optional safety measure)
-        if ($user->id === 1) {
-            return redirect()->route('admin.users.index')
-                ->with('error', 'Cannot delete the primary administrator account.');
-        }
+        } 
 
         try {
             /** Check Handle tasks  */

@@ -21,7 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role_id'
+        'role_id',
+        'created_by'
     ];
 
     public function role()
@@ -48,6 +49,10 @@ class User extends Authenticatable
     {
         return $this->role_id === Role::ADMIN;
     }
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 
     public function isManager()
     {
@@ -64,6 +69,4 @@ class User extends Authenticatable
         $permissions = $this->role->permissions ?? [];
         return in_array($permission, $permissions) || in_array('*', $permissions);
     }
-
-    
 }

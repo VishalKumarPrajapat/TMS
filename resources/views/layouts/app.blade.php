@@ -15,22 +15,27 @@
             <div class="navbar-nav ms-auto">
 
                 @auth
-                    <?php
+                <?php
                     $userName = Auth::user()->name;
                     $isAdmin = Auth::user()->isAdmin();
+                    $isManager = Auth::user()->isManager();
+                    
                     ?>
-                    <span class="navbar-text me-3">Welcome, {{ $userName }}</span>
-                    <a class="nav-link" href="{{ route('tasks.index') }}">Tasks</a>
-                    @if ($isAdmin)
-                        <a class="nav-link" href="{{ route('admin.dashboard') }}">Admin Panel</a>
-                    @endif
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="nav-link btn btn-link">Logout</button>
-                    </form>
+                <span class="navbar-text me-3">Welcome, {{ $userName }}</span>
+                <a class="nav-link" href="{{ route('tasks.index') }}">Tasks</a>
+                @if ($isAdmin )
+                <a class="nav-link" href="{{ route('admin.dashboard') }}">Admin Panel</a>
+                @endif
+                @if ( $isManager )
+                <a class="nav-link" href="{{ route('manager.dashboard') }}">Manager Panel</a>
+                @endif
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="nav-link btn btn-link">Logout</button>
+                </form>
                 @else
-                    <a class="nav-link" href="{{ route('login') }}">Login</a>
-                    <a class="nav-link" href="{{ route('register') }}">Register</a>
+                <a class="nav-link" href="{{ route('login') }}">Login</a>
+                <a class="nav-link" href="{{ route('register') }}">Register</a>
                 @endauth
             </div>
         </div>
@@ -38,15 +43,15 @@
 
     <div class="container mt-4">
         @if (session('success'))
-            <div class="alert alert-success">
-                {{ session('success') }}
-            </div>
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
         @endif
 
         @if (session('error'))
-            <div class="alert alert-danger">
-                {{ session('error') }}
-            </div>
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
         @endif
 
         @yield('content')

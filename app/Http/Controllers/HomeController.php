@@ -25,9 +25,7 @@ class HomeController extends Controller
         $user = Auth::user();
         $userName = $user->name;
 
-        // Initialize variables
-        $createTasks = 0;
-        $assignedTasks = 0;
+        // Initialize variables 
         $completeTask = 0;
         $totalTask = 0;
         $pendingTask = 0;
@@ -44,32 +42,26 @@ class HomeController extends Controller
         } elseif ($user->isManager()) {
             $userIds = User::where('created_by', $user->id)->pluck('id');
         } else {
-            $userIds = collect([$user->id]); // just the current user
+            $userIds = collect([$user->id]); 
         }
 
-        // Task queries for all roles (filtered by user_id or assigned_to)
+        /** Task queries for all roles (filtered by user_id or assigned_to) */
         $taskQuery = Task::where(function ($query) use ($userIds) {
             $query->whereIn('user_id', $userIds)
                 ->orWhereIn('assigned_to', $userIds);
         });
 
         $totalTask = (clone $taskQuery)->count();
-        $createTasks = Task::whereIn('user_id', $userIds)->count();
-        $assignedTasks = Task::whereIn('assigned_to', $userIds)->count();
         $completeTask = (clone $taskQuery)->where('status', Task::STATUS_COMPLETED)->count();
         $pendingTask = (clone $taskQuery)->where('status', Task::STATUS_PENDING)->count();
         $inProgressTask = (clone $taskQuery)->where('status', Task::STATUS_IN_PROGRESS)->count();
 
         return view('home', [
-            'userName' => $userName,
-            'createTasks' => $createTasks,
-            'assignedTasks' => $assignedTasks,
+            'userName' => $userName, 
             'completeTask' => $completeTask,
             'totalTask' => $totalTask,
             'pendingTask' => $pendingTask,
-            'inProgressTask' => $inProgressTask,
-            'isAdmin' => $user->isAdmin(),
-            'isMAnager' => $user->isManager(),
+            'inProgressTask' => $inProgressTask
         ]);
     }
 }

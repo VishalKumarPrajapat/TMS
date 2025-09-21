@@ -16,33 +16,9 @@
 
                     <h4>Welcome to Task Management System, {{ $userName }}!</h4>
 
-                    <div class="row mt-4">
-                        {{-- <div class="col-md-4">
-                            <div class="card text-white bg-primary mb-3">
-                                <div class="card-body">
-                                    <h5 class="card-title">My Tasks</h5>
-                                    <p class="card-text">
-                                        {{ $createTasks }} tasks created
-                                    </p>
-                                    <a href="{{ route('tasks.index') }}" class="btn btn-light">View Tasks</a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="card text-white bg-success mb-3">
-                                <div class="card-body">
-                                    <h5 class="card-title">Assigned Tasks</h5>
-                                    <p class="card-text">
-                                        {{ $assignedTasks }} tasks assigned to me
-                                    </p>
-                                    <a href="{{ route('tasks.index') }}" class="btn btn-light">View Tasks</a>
-                                </div>
-                            </div>
-                        </div> --}}
-
+                    <div class="row mt-4"> 
                         <div class="col-md-3">
-                            <div class="card text-white bg-primary mb-3">
+                            <div class="card text-white bg-primary mb-3" >
                                 <div class="card-body">
                                     <h5 class="card-title">Total Task</h5>
                                     <p class="card-text">
@@ -53,14 +29,14 @@
                             </div>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-3" >
                             <div class="card text-white bg-success  mb-3">
                                 <div class="card-body">
                                     <h5 class="card-title">Completed Task</h5>
                                     <p class="card-text">
                                         {{ $completeTask }}   
                                     </p>
-                                    <a href="{{ route('tasks.index') }}" class="btn btn-light">View Tasks</a>
+                                    <a href="{{ route('tasks.index', ['status' => 'completed']) }}" class="btn btn-light">View Tasks</a>
                                 </div>
                             </div>
                         </div>
@@ -72,7 +48,7 @@
                                     <p class="card-text">
                                         {{ $inProgressTask }}
                                     </p>
-                                    <a href="{{ route('tasks.index') }}" class="btn btn-light">View Tasks</a>
+                                    <a href="{{ route('tasks.index', ['status' => 'in_progress']) }}" class="btn btn-light">View Tasks</a>
                                 </div>
                             </div>
                         </div>
@@ -83,7 +59,7 @@
                                     <p class="card-text">
                                         {{ $pendingTask }}
                                     </p>
-                                    <a href="{{ route('tasks.index') }}" class="btn btn-light">View Tasks</a>
+                                    <a href="{{ route('tasks.index', ['status' => 'pending']) }}" class="btn btn-light">View Tasks</a>
                                 </div>
                             </div>
                         </div>
@@ -92,8 +68,7 @@
                     <div class="mt-4">
                         <h5>Quick Actions</h5>
                         <div class="d-grid gap-2 d-md-block">
-                            <a href="{{ route('tasks.create') }}" class="btn btn-primary">Create New Task</a>
-                            <a href="{{ route('tasks.index') }}" class="btn btn-secondary">View All Tasks</a>
+                            <a href="{{ route('tasks.create') }}" class="btn btn-primary">Create New Task</a> 
                         </div>
                     </div>
                 </div>

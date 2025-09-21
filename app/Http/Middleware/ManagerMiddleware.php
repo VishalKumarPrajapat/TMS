@@ -17,7 +17,7 @@ class ManagerMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::check() || (!Auth::user()->isAdmin() && !Auth::user()->isManager())) {
+        if (!Auth::check() || !Auth::user()->isManager()) {
             return redirect()->route('home')->with('error', 'Unauthorized access.');
         }
 

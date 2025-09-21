@@ -16,7 +16,6 @@ class ManagerController extends Controller
     public function dashboard()
     {
         $manager = auth()->user();
-
         $userIds = User::where('created_by', $manager->id)->pluck('id');
         $total_users = $userIds->count();
         $taskQuery = Task::where(function ($query) use ($userIds) {
@@ -56,6 +55,7 @@ class ManagerController extends Controller
         return view('manager.users.create', ['roles' => $roles]);
     }
 
+
     /*  Store User   */
     public function storeUser(Request $request)
     {
@@ -90,12 +90,14 @@ class ManagerController extends Controller
         }
     }
 
+
     /* Edit USer*/
     public function editUser(User $user)
     {
         $roles = Role::where('id', '!=', Role::ADMIN)->where('id', '!=', Role::MANAGER)->get();
         return view('manager.users.edit', ['user' => $user, 'roles' => $roles]);
     }
+
 
     /** Update MAngaer Created User */
     public function updateUser(Request $request, User $user)
@@ -111,7 +113,6 @@ class ManagerController extends Controller
                 ->withErrors($validator)
                 ->withInput();
         }
-
         try {
             $user->update([
                 'name' => $request->name,
@@ -128,6 +129,7 @@ class ManagerController extends Controller
         }
     }
 
+
     /* Delete USer without You  */
     public function deleteUser(User $user)
     {
@@ -135,7 +137,6 @@ class ManagerController extends Controller
             return redirect()->route('manager.users.index')
                 ->with('error', 'You cannot delete your own account.');
         }
-
         try {
             /** Check tasks if Exist not deletE */
             if ($user->tasks()->count() > 0) {

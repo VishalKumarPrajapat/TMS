@@ -35,11 +35,6 @@ class User extends Authenticatable
         return $this->hasMany(Task::class);
     }
 
-    public function assignedTasks()
-    {
-        return $this->hasMany(Task::class, 'assigned_to');
-    }
-
     public function documents()
     {
         return $this->hasMany(Document::class);
@@ -49,6 +44,7 @@ class User extends Authenticatable
     {
         return $this->role_id === Role::ADMIN;
     }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -57,16 +53,5 @@ class User extends Authenticatable
     public function isManager()
     {
         return $this->role_id === Role::MANAGER;
-    }
-
-    public function isUser()
-    {
-        return $this->role_id === Role::USER;
-    }
-
-    public function hasPermission($permission)
-    {
-        $permissions = $this->role->permissions ?? [];
-        return in_array($permission, $permissions) || in_array('*', $permissions);
-    }
+    } 
 }

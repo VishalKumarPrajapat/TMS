@@ -18,10 +18,19 @@ class TaskController extends Controller
         $this->middleware('auth');
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        /** Dynamic filters */
+        $where = [];  
+        if (!empty($request->query())) {
+            if ($request->filled('status')) {
+                $where[] = ['status', '=', $request->query('status')]; 
+            }
+        }
+        // echo "<pre>";
+        // print_r($where);
+        // exit;
         $user = auth()->user();
-
         if ($user->isAdmin()) {
             /** Admin  Data */
             $directUsers = User::where('created_by', $user->id)->pluck('id');
@@ -30,12 +39,14 @@ class TaskController extends Controller
                 ->pluck('id');
             $indirectUsers = User::whereIn('created_by', $managerIds)->pluck('id');
 
-            $userIds = $directUsers->merge($indirectUsers)->unique();
-
+            $userIds = $directUsers->merge($indirectUsers)->unique(); 
             $tasks = Task::with(['user', 'assignedUser', 'documents'])
                 ->where(function ($query) use ($userIds) {
                     $query->whereIn('user_id', $userIds)
                         ->orWhereIn('assigned_to', $userIds);
+                }) 
+                ->when(!empty($where), function ($query) use ($where) {
+                    return $query->where($where);
                 })
                 ->latest()
                 ->paginate(10);
@@ -48,14 +59,20 @@ class TaskController extends Controller
                     $query->whereIn('user_id', $userIds)
                         ->orWhereIn('assigned_to', $userIds);
                 })
+                ->when(!empty($where), function ($query) use ($where) {
+                    return $query->where($where);
+                })
                 ->latest()
                 ->paginate(10);
         } else {
-            // User Data
+            /** User Data */
             $tasks = Task::where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
                     ->orWhere('assigned_to', $user->id);
             })
+                ->when(!empty($where), function ($query) use ($where) {
+                    return $query->where($where);
+                })
                 ->with(['user', 'assignedUser', 'documents'])
                 ->latest()
                 ->paginate(10);
@@ -72,7 +89,7 @@ class TaskController extends Controller
             $users = User::where(function ($query) use ($currentUser) {
                 $query->where('created_by', $currentUser->id)
                     ->orWhereHas('createdBy', function ($query) use ($currentUser) {
-                        $query->where('created_by', $currentUser->id); // Filter users created by managers
+                        $query->where('created_by', $currentUser->id);
                     });
             })->get();
         } else {
@@ -118,11 +135,10 @@ class TaskController extends Controller
             ->with('success', 'Task created successfully.');
     }
 
+    /** Show TAsk */
     public function show($id)
     {
         $task = Task::with(['user', 'assignedUser', 'documents'])->findOrFail($id);
-
-        // Authorization check
         $user = Auth::user();
         if (
             !$user->isAdmin() && !$user->isManager() &&
@@ -206,17 +222,10 @@ class TaskController extends Controller
             ->with('success', 'Task deleted successfully.');
     }
 
+
     public function uploadDocument(Request $request, $taskId)
     {
         $task = Task::findOrFail($taskId);
-
-        // Authorization check
-        $user = Auth::user();
-        if (!$user->isAdmin() && $task->user_id !== $user->id) {
-            return redirect()->back()
-                ->with('error', 'Unauthorized access.');
-        }
-
         $validator = Validator::make($request->all(), [
             'document' => 'required|file|max:10240|mimes:pdf,doc,docx,jpg,jpeg,png,txt'
         ]);
@@ -250,17 +259,6 @@ class TaskController extends Controller
     public function downloadDocument($documentId)
     {
         $document = Document::findOrFail($documentId);
-        $task = $document->task;
-
-        // Authorization check
-        $user = Auth::user();
-        if (
-            !$user->isAdmin() && !$user->isManager() &&
-            $task->user_id !== $user->id && $task->assigned_to !== $user->id
-        ) {
-            return redirect()->back()
-                ->with('error', 'Unauthorized access.');
-        }
 
         if (!Storage::exists($document->file_path)) {
             return redirect()->back()
@@ -273,13 +271,7 @@ class TaskController extends Controller
     {
         $document = Document::findOrFail($documentId);
         $task = $document->task;
-        // Authorization check
-        $user = Auth::user();
-        if (!$user->isAdmin() && $task->user_id !== $user->id) {
-            return redirect()->back()
-                ->with('error', 'Unauthorized access.');
-        }
-
+        /** delete storage inside  */
         Storage::delete($document->file_path);
         $document->delete();
 

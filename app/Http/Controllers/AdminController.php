@@ -22,28 +22,10 @@ class AdminController extends Controller
         $this->currentUser = auth()->user();
     }
 
-    // Dashboard 
-    // public function dashboard()
-    // {
-    //     $total_users =  User::count();
-    //     $total_task = Task::count();
-    //     $complete_Tasks  =  Task::where('status', 'completed')->count();
-    //     $pending_tasks = Task::where('status', 'pending')->count();
-    //     $recent_tasks = Task::with('user')->latest()->take(5)->get();
-
-    //     return view('admin.dashboard', [
-    //         'total_users' => $total_users,
-    //         'total_task' => $total_task,
-    //         'complete_Tasks' => $complete_Tasks,
-    //         'recent_tasks' => $recent_tasks,
-    //         'pending_tasks' => $pending_tasks
-    //     ]);
-    // }
-
+    // Dashboard  
     public function dashboard()
     {
         $admin = auth()->user();
-
         /**Get & Count All managers and users */
         $directUsers = User::where('created_by', $admin->id)->pluck('id');
         $managerIds = User::where('role_id', Role::MANAGER)->where('created_by', $admin->id)->pluck('id');
@@ -81,51 +63,30 @@ class AdminController extends Controller
         ]);
     }
 
-
-
-    // User Management Methods 
+    /** User Management Methods  */
     public function users()
     {
-        // $users = User::with('role')->latest()->paginate(10);
-        // return view('admin.users.index', compact('users'));
         $currentUser = auth()->user();
-
-        // If the current user is an Admin (role_id = 1)
-        // if ($currentUser->role_id == 1) {
-        // Admin can see all users they created, and users created by their managers
         $users = User::where(function ($query) use ($currentUser) {
             $query->where('created_by', $currentUser->id)
                 ->orWhereHas('createdBy', function ($query) use ($currentUser) {
-                    $query->where('created_by', $currentUser->id); // Filter users created by managers
+                    $query->where('created_by', $currentUser->id);
                 });
         })
-            ->with('role') // Include the role relation
+            ->with('role')
             ->latest()
             ->paginate(10);
-        // } else {
-        //     // If not an Admin, return only the users created by the current user
-        //     $users = User::where('created_by', $currentUser->id)
-        //         ->with('role') // Include the role relation
-        //         ->latest()
-        //         ->paginate(10);
-        // }
-
-        // Return the view with the users data
         return view('admin.users.index', ['users' => $users]);
     }
 
-    /**
-     * Show the form for creating a new user.
-     */
+    /* Create Admin User*/
     public function createUser()
     {
         $roles = Role::where('id', '!=', Role::ADMIN)->get();
         return view('admin.users.create', compact('roles'));
     }
 
-    /**
-     * Store a newly created user in storage.
-     */
+    /* Storee Useer*/
     public function storeUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -140,14 +101,6 @@ class AdminController extends Controller
                 ->withErrors($validator)
                 ->withInput();
         }
-
-        // Prevent non-admins from creating admin users
-        // $requestedRole = Role::find($request->role_id);
-        // if ($requestedRole->name === 'admin' && !Auth::user()->isAdmin()) {
-        //     return redirect()->back()
-        //         ->with('error', 'You are not authorized to create admin users.')
-        //         ->withInput();
-        // }
 
         try {
             $admin = auth()->user();
@@ -169,9 +122,7 @@ class AdminController extends Controller
         }
     }
 
-    /**
-     * Show the form for editing the specified user.
-     */
+    /*Edit User Admins */
     public function editUser(User $user)
     {
         if ($user->id === Auth::id()) {
@@ -183,9 +134,7 @@ class AdminController extends Controller
         return view('admin.users.edit', compact('user', 'roles'));
     }
 
-    /**
-     * Update the specified user in storage.
-     */
+    /*Update*/
     public function updateUser(Request $request, User $user)
     {
         if ($user->id === Auth::id()) {
@@ -205,7 +154,6 @@ class AdminController extends Controller
                 ->withInput();
         }
 
-        // Prevent non-admins from assigning admin role
         $requestedRole = Role::find($request->role_id);
         if ($requestedRole->name === 'admin' && !Auth::user()->isAdmin()) {
             return redirect()->back()
@@ -232,12 +180,10 @@ class AdminController extends Controller
     /* Delete USer */
     public function deleteUser(User $user)
     {
-        // Prevent deleting yourself
         if ($user->id === Auth::id()) {
             return redirect()->route('admin.users.index')
                 ->with('error', 'You cannot delete your own account.');
-        } 
-
+        }
         try {
             /** Check Handle tasks  */
             if ($user->tasks()->count() > 0) {
@@ -252,120 +198,5 @@ class AdminController extends Controller
             return redirect()->route('admin.users.index')
                 ->with('error', 'Error deleting user: ' . $e->getMessage());
         }
-    }
-
-    // Additional admin methods for task management 
-    public function allTasks()
-    {
-        $tasks = Task::with(['user', 'assignedUser'])->latest()->paginate(10);
-        return view('admin.tasks.index', compact('tasks'));
-    }
-
-
-    public function showTask(Task $task)
-    {
-        return view('admin.tasks.show', compact('task'));
-    }
-
-
-    /** Delete Task with Document */
-    public function deleteTask(Task $task)
-    {
-        try {
-            foreach ($task->documents as $document) {
-                Storage::delete($document->file_path);
-                $document->delete();
-            }
-
-            $task->delete();
-
-            return redirect()->route('admin.tasks.index')
-                ->with('success', 'Task deleted successfully.');
-        } catch (\Exception $e) {
-            return redirect()->route('admin.tasks.index')
-                ->with('error', 'Error deleting task: ' . $e->getMessage());
-        }
-    }
-
-    // Manager methods
-
-    public function managerDashboard()
-    {
-        $user = Auth::user();
-        $team_tasks = Task::where('assigned_to', $user->id)
-            ->orWhereHas('assignedUser', function ($q) use ($user) {
-                $q->where('manager_id', $user->id);
-            })
-            ->with(['user', 'assignedUser'])
-            ->latest()
-            ->paginate(10);
-
-        return view('manager.dashboard', compact('team_tasks'));
-    }
-
-    public function teamTasks()
-    {
-        $user = Auth::user();
-        $tasks = Task::whereHas('assignedUser', function ($q) use ($user) {
-            $q->where('manager_id', $user->id);
-        })
-            ->with(['user', 'assignedUser'])
-            ->latest()
-            ->paginate(10);
-
-        return view('manager.tasks.index', compact('tasks'));
-    }
-
-    public function showTeamTask(Task $task)
-    {
-        return view('manager.tasks.show', compact('task'));
-    }
-
-    public function assignTask(Request $request, Task $task)
-    {
-        $validator = Validator::make($request->all(), [
-            'assigned_to' => 'required|exists:users,id',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        try {
-            $task->update(['assigned_to' => $request->assigned_to]);
-
-            return redirect()->back()
-                ->with('success', 'Task assigned successfully.');
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Error assigning task: ' . $e->getMessage());
-        }
-    }
-
-    public function teamMembers()
-    {
-        $user = Auth::user();
-        $team_members = User::where('manager_id', $user->id)->get();
-        return view('manager.team.index', compact('team_members'));
-    }
-
-    public function teamPerformance()
-    {
-        $user = Auth::user();
-        $team_members = User::where('manager_id', $user->id)->withCount(['tasks', 'assignedTasks'])->get();
-
-        $performance_data = [];
-        foreach ($team_members as $member) {
-            $performance_data[] = [
-                'name' => $member->name,
-                'tasks_created' => $member->tasks_count,
-                'tasks_assigned' => $member->assigned_tasks_count,
-                'tasks_completed' => $member->tasks()->where('status', 'completed')->count(),
-            ];
-        }
-
-        return view('manager.team.performance', compact('performance_data'));
     }
 }
